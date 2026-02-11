@@ -79,3 +79,55 @@ class UserSkill(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.skill.name} ({self.proficiency_level})"
 
+
+    class Meta:
+        Unique_together = ['user','skill']
+        ordering = ['-proficiency_level','-years_of_experience']
+        
+        
+class SkillWanted(models.Model):
+    """Skills that a user wants to learn"""
+    PRIORITY_LEVELS = [
+        ('low','Low'),
+        ('medium','Medium'),
+        ('high','High'),
+        
+    ]
+    
+    user = models.ForeignKey(User, on_delete= models.CASCADE, related_name='skill_wanted')
+    skill = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name='wanted_by_users')
+    priority = models.CharField(max_length=10,choices = PRIORITY_LEVELS,default='medium')
+    description = models.TextField(blank=True, help_text="What you want to learn about this skill")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.email} wants to learn {self.skill.name}"
+    
+    class Meta:
+        unique_together = ['user','skill']
+        ordering = ['-priority','-created_at']
+        
+
+class UserRating(models.Model):
+    """Rating system for users after skill exchanges"""
+    rated_user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='ratings_received')
+    
+    rated_by = models.ForeignKey(User,on_delete=models.CASCADE,related_name='ratings_received')
+    rating = models.PositiveBigIntegerField(validators=[MinValueValidator(1),MaxValueValidator(5)])
+    review = models.TextField(blank=True)
+    Skill = models.ForeignKey(Skill,on_delete=models.SET_NULL,null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    
+    
+    def __str__(self):
+        return f"{self.rated_by.email} rated {self.rated_user.email}:{self.rating}/5"
+    
+    
+    class Meta:
+        unique_together = ['rated_user', 'rated_by','skill']
+        ordering = ['-created_at']
+        
+        
+        
