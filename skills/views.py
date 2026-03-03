@@ -108,3 +108,22 @@ class ExchangeRequestViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+    def _create_session_from_request(self, exchange_request):
+        """Create a session from an accepted exchange request"""
+        if exchange_request.proposed_date:
+            scheduled_start = exchange_request.proposed_date
+            scheduled_end = scheduled_start + timezone.timedelta(
+                minutes=exchange_request.duration_minutes
+            )
+            
+            ExchangeSession.objects.create(
+                exchange_request=exchange_request,
+                participant_1=exchange_request.requester,
+                participant_2=exchange_request.receiver,
+                title=f"{exchange_request.skill_requested.name} ↔ {exchange_request.skill_offered.name}",
+                scheduled_start=scheduled_start,
+                scheduled_end=scheduled_end
+            )
