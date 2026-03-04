@@ -127,3 +127,64 @@ class ExchangeRequestViewSet(viewsets.ModelViewSet):
                 scheduled_start=scheduled_start,
                 scheduled_end=scheduled_end
             )
+            
+            
+    def _create_notification(self, exchange_request):
+       """Create notification for exchange request response"""
+       notification_type = 'request_accepted' if exchange_request.status == 'accepted' else 'request_rejected'
+
+       Notification.objects.create(
+           user = exchange_request.requester,
+           notification_type = notification_type,
+           title = f"Your exchange request has been {exchange_request.status}.",
+           exchange_request = exchange_request
+       )    
+       
+       
+       
+class ExchangeSessionViewSet(viewsets.ModelViewSet):
+    """ViewSet for exchange sessions"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['status','meeting_type']
+    ordering_fields = ['scheduled_start','created_at']
+    ordering = ['-scheduled_start']
+    
+    
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return ExchangeSessionDetailSerializer
+        return ExchangeSessionSerializer
+    
+    def get_queryset(self):
+        """Return session where user is a participant"""
+        user = self.request.user
+        return ExchangeSession.objects.filter(
+            Q(participant_1 = user) | Q(participant_2 = user)
+
+
+
+        )
+        
+        
+    @action(detail=False, methods=['get'])
+    def upcoming(self, request):
+        """Get upcoming session"""
+        sessions = self.get_queryset().filter(
+            scheduled_start__gte=timezone.now(),
+            status = 'scheduled'
+        )
+        serializer = self.get_serializer(sessions, many = True)
+        return Response(serializer.data)
+    
+    
+    @action(detail=False, methods=['get'])
+    def past(self, request):
+        """Get past sessions"""
+        sessions = self.get_queryset().filter(
+            scheduled_start__lt= timezone.now()
+        ).exclude(status = 'scheduled')
+        serializer = self.get_serializer(sessions,many = True)
+        return Response(serializer.data)
+        
+        
