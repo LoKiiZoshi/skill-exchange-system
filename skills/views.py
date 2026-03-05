@@ -1,6 +1,3 @@
-
-Copy
-
 from rest_framework import viewsets, status, filters, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -108,9 +105,7 @@ class ExchangeRequestViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-    
+
     def _create_session_from_request(self, exchange_request):
         """Create a session from an accepted exchange request"""
         if exchange_request.proposed_date:
@@ -127,64 +122,122 @@ class ExchangeRequestViewSet(viewsets.ModelViewSet):
                 scheduled_start=scheduled_start,
                 scheduled_end=scheduled_end
             )
-            
-            
-    def _create_notification(self, exchange_request):
-       """Create notification for exchange request response"""
-       notification_type = 'request_accepted' if exchange_request.status == 'accepted' else 'request_rejected'
 
-       Notification.objects.create(
-           user = exchange_request.requester,
-           notification_type = notification_type,
-           title = f"Your exchange request has been {exchange_request.status}.",
-           exchange_request = exchange_request
-       )    
-       
-       
-       
+    def _create_notification(self, exchange_request):
+        """Create notification for exchange request response"""
+        notification_type = 'request_accepted' if exchange_request.status == 'accepted' else 'request_rejected'
+        
+        Notification.objects.create(
+            user=exchange_request.requester,
+            notification_type=notification_type,
+            title=f"Exchange Request {exchange_request.status.title()}",
+            message=f"Your exchange request has been {exchange_request.status}.",
+            exchange_request=exchange_request
+        )
+
+
 class ExchangeSessionViewSet(viewsets.ModelViewSet):
     """ViewSet for exchange sessions"""
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['status','meeting_type']
-    ordering_fields = ['scheduled_start','created_at']
+    filterset_fields = ['status', 'meeting_type']
+    ordering_fields = ['scheduled_start', 'created_at']
     ordering = ['-scheduled_start']
-    
-    
+
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return ExchangeSessionDetailSerializer
         return ExchangeSessionSerializer
-    
+
     def get_queryset(self):
-        """Return session where user is a participant"""
+        """Return sessions where user is a participant"""
         user = self.request.user
         return ExchangeSession.objects.filter(
-            Q(participant_1 = user) | Q(participant_2 = user)
-
-
-
+            Q(participant_1=user) | Q(participant_2=user)
         )
-        
-        
+
     @action(detail=False, methods=['get'])
     def upcoming(self, request):
-        """Get upcoming session"""
+        """Get upcoming sessions"""
         sessions = self.get_queryset().filter(
             scheduled_start__gte=timezone.now(),
-            status = 'scheduled'
+            status='scheduled'
         )
-        serializer = self.get_serializer(sessions, many = True)
+        serializer = self.get_serializer(sessions, many=True)
         return Response(serializer.data)
-    
-    
+
     @action(detail=False, methods=['get'])
     def past(self, request):
         """Get past sessions"""
         sessions = self.get_queryset().filter(
-            scheduled_start__lt= timezone.now()
-        ).exclude(status = 'scheduled')
-        serializer = self.get_serializer(sessions,many = True)
+            scheduled_start__lt=timezone.now()
+        ).exclude(status='scheduled')
+        serializer = self.get_serializer(sessions, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def start(self, request, pk=None):
+        """Start a session"""
+        session = self.get_object()
         
+        if session.status != 'scheduled':
+            return Response(
+                {'error': 'Only scheduled sessions can be started.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
+        session.status = 'in_progress'
+        session.actual_start = timezone.now()
+        session.save()
+        
+        serializer = self.get_serializer(session)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def complete(self, request, pk=None):
+        """Complete a session"""
+        session = self.get_object()
+        
+        if session.status not in ['scheduled', 'in_progress']:
+            return Response(
+                {'error': 'Invalid session status for completion.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        session.status = 'completed'
+        session.actual_end = timezone.now()
+        session.save()
+        
+        serializer = self.get_serializer(session)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """Cancel a session"""
+        session = self.get_object()
+        
+        if session.status == 'completed':
+            return Response(
+                {'error': 'Cannot cancel a completed session.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        session.status = 'cancelled'
+        session.save()
+        
+        # Create notification for other participant
+        other_participant = (
+            session.participant_2 if session.participant_1 == request.user
+            else session.participant_1
+        )
+        
+        Notification.objects.create(
+            user=other_participant,
+            notification_type='session_cancelled',
+            title='Session Cancelled',
+            message=f'The session "{session.title}" has been cancelled.',
+            session=session
+        )
+        
+        serializer = self.get_serializer(session)
+        return Response(serializer.data)
