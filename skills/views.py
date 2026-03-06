@@ -241,3 +241,27 @@ class ExchangeSessionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(session)
         return Response(serializer.data)
+    
+    
+class SessionFeedbackViewSet(viewsets.ModelViewSet):
+    """ViewSet for session feedback"""
+    serializer_class = SessionFeedbackSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['session', 'overall_rating']
+    ordering_fields = ['created_at', 'overall_rating']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        """Return feedback for sessions user participated in"""
+        user = self.request.user
+        return SessionFeedback.objects.filter(
+            Q(session__participant_1=user) | Q(session__participant_2=user)
+        )
+
+    @action(detail=False, methods=['get'])
+    def my_feedback(self, request):
+        """Get feedback given by current user"""
+        feedbacks = SessionFeedback.objects.filter(user=request.user)
+        serializer = self.get_serializer(feedbacks, many=True)
+        return Response(serializer.data)
