@@ -265,3 +265,70 @@ class SessionFeedbackViewSet(viewsets.ModelViewSet):
         feedbacks = SessionFeedback.objects.filter(user=request.user)
         serializer = self.get_serializer(feedbacks, many=True)
         return Response(serializer.data)
+
+
+
+class SkillExchangeOfferViewSet(viewsets.ModelViewSet):
+    """ViewSet for skill exchange offers"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'skill', 'availability', 'requires_exchange']
+    search_fields = ['title', 'description', 'skill__name']
+    ordering_fields = ['created_at', 'total_sessions', 'total_students']
+    ordering = ['-created_at']
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return SkillExchangeOfferDetailSerializer
+        return SkillExchangeOfferSerializer
+
+    def get_queryset(self):
+        """Return all active offers or user's own offers"""
+        user = self.request.user
+        
+        # Show user's own offers regardless of status
+        user_offers = Q(user=user)
+        # Show active offers from other users
+        active_offers = Q(status='active') & ~Q(user=user)
+        
+        return SkillExchangeOffer.objects.filter(user_offers | active_offers)
+
+    @action(detail=False, methods=['get'])
+    def my_offers(self, request):
+        """Get current user's offers"""
+        offers = SkillExchangeOffer.objects.filter(user=request.user)
+        serializer = self.get_serializer(offers, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Get all active offers"""
+        offers = SkillExchangeOffer.objects.filter(status='active').exclude(user=request.user)
+        serializer = self.get_serializer(offers, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def toggle_status(self, request, pk=None):
+        """Toggle offer status between active and paused"""
+        offer = self.get_object()
+        
+        # Only owner can toggle status
+        if offer.user != request.user:
+            return Response(
+                {'error': 'Only the offer owner can toggle status.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if offer.status == 'active':
+            offer.status = 'paused'
+        elif offer.status == 'paused':
+            offer.status = 'active'
+        else:
+            return Response(
+                {'error': 'Cannot toggle status of closed offers.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        offer.save()
+        serializer = self.get_serializer(offer)
+        return Response(serializer.data)
