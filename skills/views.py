@@ -332,3 +332,141 @@ class SkillExchangeOfferViewSet(viewsets.ModelViewSet):
         offer.save()
         serializer = self.get_serializer(offer)
         return Response(serializer.data)
+
+
+
+
+
+class BookingViewSet(viewsets.ModelViewSet):
+    """ViewSet for bookings"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filter_fields = ['status','offer']
+    ordering_fields = ['created_at','proposed_datetime']
+    ordering = ['-created_at']
+    
+    
+    def get_serializer_class(self):
+        if self.action in ['update','partial_update','confirm','cancel']:
+            return BookingUpdateSerializer
+        return BookingSerializer
+    
+    
+    def get_queryset(self):
+        """Return bookings made by user or for user's offers"""
+        User = self.request.user
+        return Booking.objects.filter(
+            Q(student=User)|Q(offer__user = User)
+            
+        )
+        
+    @action(detail=False, methods = ['get'])
+    def my_bookings(self, request):
+        """Get bookings made by current user"""
+        bookings = Booking.objects.filter(student = request.user)
+        serializer = self.get_serializer(bookings,many = True)
+        return Response(serializer.data)
+    
+    
+    @action(detail=False, methods=['get'])
+    def received_bookings(self, request):
+        """Get bookings for current user's offers"""
+        bookings = Booking.objects.filter(offer__user = request.user)
+        serializer = self.get_serializer(bookings, many =True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def confirm(self, request, pk = None):
+        """Confirm a booking"""
+        booking = self.get_object()
+        
+        # Only offer owner can confirm
+        if booking.offer.user != request.user:
+            return Response(
+                {'error':'Only the offer owner can confirm bookings.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        if booking.status != 'pending':
+            return Response(
+                {'error':'Only pending bookings can be confirmed'},
+                status=status.HTTP_400_BAD_REQUEST
+                
+                
+            )
+        
+        booking.status = 'confirmed'
+        booking.confirmed_at = timezone.now()
+        
+        # Create session
+        scheduled_start = booking.proposed_datetime
+        scheduled_end = scheduled_start + timezone.timedelta(
+            minutes= booking.offer.session_duration
+        )
+        
+        
+        session = ExchangeSession.objects.create(
+            participant_1 = booking.offer.user,
+            participant_2 = booking.student,
+            title = booking.offer.title,
+            description = booking.offer.description,
+            scheduled_start = scheduled_start,
+            scheduled_end = scheduled_end,
+            meeting_type = booking.offer.preferred_meeting_type
+            
+        )
+        
+        
+        booking.session = session
+        booking.save()
+        
+        
+        #create notification
+        Notification.objects.create(
+            User = booking.student,
+            Notification_type = 'booking_confirmed',
+            message = f'Your booking "{booking.offer.title}" has been confirmed.',
+            booking = booking
+        )
+        
+        serializer = BookingSerializer(booking)
+        return Response(serializer.data)
+    
+    
+    @action(detail=True, methods=['post'])
+    def cancle(self, request, pk = None):
+        """Cancel a booking"""
+        booking = self.get_object()
+        
+        # Either student or offer owner can cancel
+        if booking.student != request.User and booking.offer.User != request.User:
+            return Response(
+                {'error':'You do not have permission to cancel this booking'},
+                status= status.HTTP_403_FORBIDDEN
+            )
+            
+            
+        booking.status = 'cancelled'
+        booking.save()
+        
+        
+        
+        # Create notification for the other party
+        notification_user = (
+            booking.offer.user if booking.student == request.User
+            else booking.student
+        )
+        
+        Notification.objects.create(
+            user = notification_user,
+            notification_type ='booking_request',
+            title = 'Booking Cancelled',
+            message = f'A booking for"{booking.offer.title}" has been cancelled.',
+            booking = booking
+        )
+        
+        serializer = BookingSerializer(booking)
+        return Response(serializer.data)
+    
+    
+    
