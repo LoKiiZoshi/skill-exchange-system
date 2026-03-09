@@ -470,3 +470,44 @@ class BookingViewSet(viewsets.ModelViewSet):
     
     
     
+class NotificationViewSet(viewsets.ModelViewSet):
+    """ViewSet for notifications"""
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['notification_type', 'is_read']
+    ordering_fields = ['created_at']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        """Return notifications for current user"""
+        return Notification.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def unread(self, request):
+        """Get unread notifications"""
+        notifications = self.get_queryset().filter(is_read=False)
+        serializer = self.get_serializer(notifications, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        """Mark notification as read"""
+        notification = self.get_object()
+        notification.mark_as_read()
+        serializer = self.get_serializer(notification)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def mark_all_as_read(self, request):
+        """Mark all notifications as read"""
+        self.get_queryset().filter(is_read=False).update(
+            is_read=True,
+            read_at=timezone.now()
+        )
+        return Response({'message': 'All notifications marked as read.'})
+  
+   
+    
+    
+    
