@@ -506,8 +506,62 @@ class NotificationViewSet(viewsets.ModelViewSet):
             read_at=timezone.now()
         )
         return Response({'message': 'All notifications marked as read.'})
-  
    
-    
-    
-    
+   
+   
+class DashboardStatsView(APIView):
+    """View for getting dashboard statistics"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        
+        stats = {
+            'exchange_requests': {
+                'sent': ExchangeRequest.objects.filter(requester=user).count(),
+                'received': ExchangeRequest.objects.filter(receiver=user).count(),
+                'pending': ExchangeRequest.objects.filter(
+                    Q(requester=user) | Q(receiver=user),
+                    status='pending'
+                ).count(),
+            },
+            'sessions': {
+                'total': ExchangeSession.objects.filter(
+                    Q(participant_1=user) | Q(participant_2=user)
+                ).count(),
+                'upcoming': ExchangeSession.objects.filter(
+                    Q(participant_1=user) | Q(participant_2=user),
+                    scheduled_start__gte=timezone.now(),
+                    status='scheduled'
+                ).count(),
+                'completed': ExchangeSession.objects.filter(
+                    Q(participant_1=user) | Q(participant_2=user),
+                    status='completed'
+                ).count(),
+            },
+            'offers': {
+                'active': SkillExchangeOffer.objects.filter(
+                    user=user,
+                    status='active'
+                ).count(),
+                'total': SkillExchangeOffer.objects.filter(user=user).count(),
+            },
+            'bookings': {
+                'pending': Booking.objects.filter(
+                    Q(student=user) | Q(offer__user=user),
+                    status='pending'
+                ).count(),
+                'confirmed': Booking.objects.filter(
+                    Q(student=user) | Q(offer__user=user),
+                    status='confirmed'
+                ).count(),
+            },
+            'notifications': {
+                'unread': Notification.objects.filter(
+                    user=user,
+                    is_read=False
+                ).count(),
+            }
+        }
+        
+        return Response(stats)
