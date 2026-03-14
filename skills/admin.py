@@ -402,3 +402,48 @@ class NotificationAdmin(admin.ModelAdmin):
             return format_html('<span style="color: green;">✓ Read</span>')
         return format_html('<span style="color: orange;">⦿ Unread</span>')
     is_read_badge.short_description = 'Status'
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+@admin.register(Booking)
+class BookingAdmin(admin.ModelAdmin):
+    """Admin configuration for Booking"""
+    list_display = [
+        'id', 'offer_title', 'student_display', 'teacher_display',
+        'status_badge', 'proposed_datetime', 'created_at'
+    ]
+    list_filter = ['status', 'created_at', 'proposed_datetime']
+    search_fields = [
+        'offer__title', 'student__email', 'student__username',
+        'offer__user__email', 'message'
+    ]
+    readonly_fields = ['created_at', 'updated_at', 'confirmed_at']
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Basic Info', {
+            'fields': ('offer', 'student', 'status', 'message')
+        }),
+        ('Schedule', {
+            'fields': ('proposed_datetime',)
+        }),
+        ('Exchange Details', {
+            'fields': ('exchange_skill', 'exchange_message')
+        }),
+        ('Session', {
+            'fields': ('session',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'confirmed_at'),
+            'classes': ('collapse',)
+        }),
+    )
