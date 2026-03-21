@@ -77,4 +77,61 @@ class MatchPreference(models.Model):
         verbose_name = "Match Preference"
         verbose_name_plural = "Match Preferences"
  
+ 
+ 
+class SkillMatch(models.Model):
+    """Potential skill matches between users"""
+    MATCH_TYPE_CHOICES = [
+        ('mutual_exchange','Mutual Exchange'),
+        ('one_way_teaching','One way Teaching'),
+        ('group_learning','Group Learning'),
+        
+    ]
+    
+    user1 = models.ForeignKey(User,on_delete=models.CASCADE,related_name='matches_as_user2')
+    
+    # Skill involved
+    user1_skill = models.ForeignKey('account.Skill',on_delete=models.CASCADE,related_name='matches_as_user1_skill',help_text = "Skill that user1 can teach")
+    
+    user2_skill = models.ForeignKey('accounts.Skill', on_delete=models.CASCADE,related_name='matches_as_user2_skill',null=True,blank=True,help_text="Skill that user2 can teach") 
+    
+    # Match details
+    match_type = models.CharField(max_length=30, choices=MATCH_TYPE_CHOICES)
+    match_score = models.DecimalField(max_digits=5, decimal_places=2,validators=[MinValueValidator(0.0),MaxValueValidator(100.0)],help_text="Match compatibility score (0-100)")
+    
+    # Match factors
+    skill_compatibility = models.DecimalField(max_digits=5,decimal_places=2,default=0.0)
+    location_compatibility = models.DecimalField(max_digits=5,decimal_places=2,default=0.0)
+    availability_compatibility = models.DecimalField(max_digits=5 ,decimal_places=2, default=0.o)
+    experience_compatibility = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    rating_compatibility = models.DecimalField(max_digits=5, decimal_places=2,default=0.0)
+    
+    # Status 
+    is_active = models.BooleanField(default=True)
+    viewed_by_user1 = models.BooleanField(default=False)
+    viewed_by_user2 = models.BooleanField(default=False)
+    
+    
+    # Interaction tracking 
+    user1_interested = models.BooleanField(default=False)
+    user2_interested = models.BooleanField(default=False)
+    exchange_request_created = models.BooleanField(default=False)
+    
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    
+    
+    def __str__(self):
+        return f"{self.user1.email}-{self.user2.email}({self.match_score}%)"
+    
+    class Meta:
+        ordering = ['-match_score', '-create_at']
+        unique_together = ['user1','user2','user1_skill']
+        indexes = [
+            models.Index(fields=['-match_score']),
+            models.Index(fields=['user1','-match_score']),
+            models.Index(fields=['user2','-match_score']),
+        ]
+ 
 
