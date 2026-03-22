@@ -102,7 +102,7 @@ class SkillMatch(models.Model):
     # Match factors
     skill_compatibility = models.DecimalField(max_digits=5,decimal_places=2,default=0.0)
     location_compatibility = models.DecimalField(max_digits=5,decimal_places=2,default=0.0)
-    availability_compatibility = models.DecimalField(max_digits=5 ,decimal_places=2, default=0.o)
+    availability_compatibility = models.DecimalField(max_digits=5 ,decimal_places=2, default=0.0)
     experience_compatibility = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     rating_compatibility = models.DecimalField(max_digits=5, decimal_places=2,default=0.0)
     
@@ -134,4 +134,73 @@ class SkillMatch(models.Model):
             models.Index(fields=['user2','-match_score']),
         ]
  
+    
+class MatchSuggestion(models.Model):
+    """AI - powered match suggestions"""
+    SUGGESTION_TYPE_CHOICES = [
+        ('perfect_match','Perfect Match'),
+        ('good_match','Good Match'),
+        ('potential_match','Potential Match'),
+        ('skill_complement', 'Skill Complement'),
+        ('similar_interest', 'Similar Interest'),
+        
+    ]
+    
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE,related_name='match_suggestions')
+    suggested_user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='suggested_to')
+    suggestion_type = models.CharField(max_length=30, choices=SUGGESTION_TYPE_CHOICES)
+    reason = models.TextField(help_text="Why this user is suggested")
+    
+    
+    # Skills involved
+    
+    primary_skill = models.ForeignKey('accounts.Skill', on_delete=models.CASCADE,related_name='primary_in_suggestions',null=True,blank=True)
+    # Suggestion score
+    suggestion_score = models.DecimalField(max_digits=5,decimal_places=2,validators=[MinValueValidator(0.0), MaxValueValidator(100.0)])
 
+
+# User interaction
+viewwed = models.BooleanField(default=False)
+viewwed_at = models.DateTimeField(null=True, blank=True)
+dismissed = models.BooleanField(default=False)
+dismissed_at = models.DateTimeField(null=True, blank=True)
+accepted = models.BooleanField(default=False)
+accepted_at = models.DateTimeField(null=True, blank=True)
+
+
+created_at = models.DateTimeField(auto_now_add=True)
+expires_at = models.DateTimeField(help_text="When this suggestion expires",
+                                  null=True,
+                                  blank=True)
+def __str__(self):
+    return f"Suggest {self.suggested_user.email}to{self.user.email}"
+
+class Meta:
+    ordering = ['-suggestion_score','-created_At']
+    indexes = [
+        models.Index(fields =['user','-suggestion_score']),
+        models.Index(fields=['user', 'dismissed','viewed']),
+        
+    ]
+    
+    
+    def mark_as_viewed(self):
+        """Mark suggestion as viewed"""
+        if not self.viewed:
+            self.viewed = True
+            self.viewed_at = timezone.now()
+            self.save()
+            
+            
+    def dismiss(self):
+        """Dismiss this suggestion"""
+        self.dismissed = True
+        self.dismissed_at = timezone.now()
+        self.save()
+        
+    def accept(self):
+        """Accept this suggestion"""
+        self.accepted = True
+        self.accepted_at = timezone.now()
+        self.save()    
