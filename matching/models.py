@@ -204,3 +204,22 @@ class Meta:
         self.accepted = True
         self.accepted_at = timezone.now()
         self.save()    
+        
+        
+    class SavedMatch(models.Model):
+        """Matches saved/bookmarked by users"""
+        user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='saved_matches')
+        matched_user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='saved_by')
+        skill_match = models.ForeignKey(SkillMatch,on_delete=models.CASCADE,related_name='saved_by_users',null=True,blank=True)
+        notes = models.TextField(blank=True,help_text="Personal notes about this match")
+        created_at = models.DateTimeField(auto_now_add=True)
+        
+        
+        def __str__(self):
+            return f"{slef.user.email}saved{self.matched_user.email}"
+        
+        class Meta:
+            Unique_together = ['User','matched_user']
+            ordering = ['-created_at']
+            
+            
