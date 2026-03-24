@@ -223,3 +223,33 @@ class Meta:
             ordering = ['-created_at']
             
             
+            
+class MatchFilter(models.Model):
+    """Custom filter created by users for finding matches"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE,related_name='match_filters')
+    name = models.CharField(max_length=100, help_text="Filter name")
+    description = models.TextField(blank=True)
+    
+    # Filter criteria
+    skill_categories = models.ManyToManyField('accounts.SkillCategory',blank=True,related_name='used_in_filters')
+    skills = models.ManyToManyField('accounts.Skill',blank=True,related_name='used_in_filters')
+    
+    min_rating = models.DecimalField(max_digits=3, decimal_places=3,null=True,blank=True,validators=[MinValueValidator(0.0),MaxValueValidator(5.0)])
+    min_experience = models.PositiveBigIntegerField(null=True,blank=True)
+    location = models.CharField(max_length=200,blank=True)
+    max_distance = models.CharField(max_length=20,blank=True)
+    meeting_type = models.CharField(max_length=20,blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.user.email}"
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+        
+        
+        
