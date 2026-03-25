@@ -251,5 +251,32 @@ class MatchFilter(models.Model):
         ordering = ['-created_at']
         
         
+class MatchAnalytics(models.Model):
+    """Anaytics for match quality and outcomes"""
+    skill_match = models.OneToOneField(SkillMatch,on_delete=models.CASCADE,related_name='analytics')
+    
+    # Interaction metrics
+    total_views = models.PositiveBigIntegerField(default=0)
+    total_messages = models.PositiveIntegerField(default=0)
+    exchange_request_sent = models.BooleanField(default=False)
+    exchange_completed = models.BooleanField(default=False)
+    
+    # Quality metrics
+    user1_satisfaction = models.PositiveIntegerField(null=True,blank=True,validators=[MinValueValidator(1),MaxValueValidator(5)])
+    user2_satisfaction = models.PositiveIntegerField(null=True,blank=True,validators=[MinValueValidator(1),MaxValueValidator(5)])
+    
+    # Outcome
+    sucessful_match = models.BooleanField(default=False)
+    match_quality_score = models.DecimalField(max_digits=5, decimal_places=2,null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Analytics for Match {self.skill_match}"
+    
+    class Meta:
+        verbose_name = "Match Analytics"
+        verbose_name_plural = "Match Analytics"
         
         
+    
