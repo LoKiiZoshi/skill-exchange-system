@@ -279,4 +279,30 @@ class MatchAnalytics(models.Model):
         verbose_name_plural = "Match Analytics"
         
         
+class MatchFeedback(models.Model):
+    """Feedback on match quality"""
+    FEEDBACK_TYPE_CHOICES = [
+        ('helpful','Helpful Match'),
+        ('not_helpful','Not Helpful')
+        ('incorrect','Incorrect Match'),
+        ('spam', 'Spam/Inapproprite'),
+        
+    ]
     
+    user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='match_feedbacks')
+    skill_match = models.ForeignKey(SkillMatch, on_delete=models.CASCADE,related_name='feedbacks')
+    
+    feedback_type = models.CharField(max_length=20,choices = FEEDBACK_TYPE_CHOICES)
+    reating = models.PositiveIntegerField(validators=[MinValueValidator(1),MaxValueValidator(5)],)
+    comment = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.feedback_type}"
+    
+    class Meta:
+        Unique_together = ['user','skill_match']
+        ordering = ['-created_at']
+        
+        
