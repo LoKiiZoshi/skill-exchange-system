@@ -65,3 +65,39 @@ class SkillMatchSerializer(serializers.ModelSerializer):
             if ratings.exists():
                 return round(sum(r.rating for r in ratings)/ ratings.count(),2)
             return None
+        
+class MatchSuggestionSerializer(serializers.ModelSerializer):
+    """Serializer for match suggestions"""
+    suggested_user_name = serializers.CharField(source='suggested_user.get_full_name', read_only=True)
+    suggested_user_email = serializers.CharField(source='suggested_user.email', read_only=True)
+    suggested_user_profile = serializers.ImageField(source='suggested_user.profile_picture', read_only=True)
+    suggested_user_location = serializers.CharField(source='suggested_user.location', read_only=True)
+    suggested_user_bio = serializers.CharField(source='suggested_user.bio', read_only=True)
+    
+    primary_skill_name = serializers.CharField(source='primary_skill.name', read_only=True)
+    secondary_skill_name = serializers.CharField(source='secondary_skill.name', read_only=True)
+    
+    suggested_user_rating = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = MatchSuggestion
+        fields = [
+            'id', 'user', 'suggested_user', 'suggested_user_name',
+            'suggested_user_email', 'suggested_user_profile',
+            'suggested_user_location', 'suggested_user_bio',
+            'suggested_user_rating', 'suggestion_type', 'reason',
+            'primary_skill', 'primary_skill_name', 'secondary_skill',
+            'secondary_skill_name', 'suggestion_score', 'viewed',
+            'viewed_at', 'dismissed', 'dismissed_at', 'accepted',
+            'accepted_at', 'created_at', 'expires_at'
+        ]
+        read_only_fields = [
+            'id', 'user', 'viewed_at', 'dismissed_at', 'accepted_at', 'created_at'
+        ]
+ 
+    def get_suggested_user_rating(self, obj):
+        ratings = obj.suggested_user.ratings_received.all()
+        if ratings.exists():
+            return round(sum(r.rating for r in ratings) / ratings.count(), 2)
+        return None
+ 
