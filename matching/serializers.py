@@ -101,3 +101,22 @@ class MatchSuggestionSerializer(serializers.ModelSerializer):
             return round(sum(r.rating for r in ratings) / ratings.count(), 2)
         return None
  
+class SaveMatchSerializers(serializers.ModelSerializer):
+    """Serializer for saved matches"""
+    matched_user_name = serializers.CharField(source = 'matched_user.get_full_name',read_only = True)
+    matched_user_email = serializers.CharField(source = 'matched_user.email', read_only = True)
+    matched_user_profile = serializers.ImageField(source = 'matched_user.profile_picture',read_only = True)
+    skill_match_details = SkillMatchSerializer(source = 'skill_match', read_only = True)
+    
+    class Meta:
+        model = SavedMatch
+        fields = [
+            'id','user','matched_user','matched_user_name',
+            'matched_user_email','matched_user_profile',
+            'skill_match','skill_match_details','notes','created_at'
+        ]
+        read_only_fields = ['id','user','created_at']
+        
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
