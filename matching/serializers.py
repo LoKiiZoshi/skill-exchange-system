@@ -101,7 +101,7 @@ class MatchSuggestionSerializer(serializers.ModelSerializer):
             return round(sum(r.rating for r in ratings) / ratings.count(), 2)
         return None
  
-class SaveMatchSerializers(serializers.ModelSerializer):
+class SavedMatchSerializers(serializers.ModelSerializer):
     """Serializer for saved matches"""
     matched_user_name = serializers.CharField(source = 'matched_user.get_full_name',read_only = True)
     matched_user_email = serializers.CharField(source = 'matched_user.email', read_only = True)
@@ -120,3 +120,43 @@ class SaveMatchSerializers(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+    
+    
+    
+class MatchFilterSerializer(serializers.ModelSerializer):
+    """Serializer for match filters"""
+    skill_categories_details = serializers.SerializerMethodField()
+    skill_details = serializers.SerializerMethodField()
+    
+    class meta:
+        model = MatchFilter
+        fields = [
+            'id','user','name','description','skill_categories',
+            'skill-categories_details','skills','skills_details',
+            'min_rating','min_experience','location','max_distance',
+            'meeting_type','is_active','created_at','updated_at'
+        ]
+        read_only_fields = ['id','user','created_at','updated_at']
+        
+        def get_skill_categories_details(self,obj):
+            from accounts.serializers import SkillCategorySerializer
+            return SkillCategorySerializer(obj.skill_categories.all(),many = True).data
+        
+        
+        def get_skills_details(self,obj):
+            from accounts.serializers import SkillSerializer
+            return SkillSerializer(obj.skills.all(),many = True).data
+        
+        def create(self,validated_data):
+            skill_categories = validated_data.pop('skill_categories',[])
+            skills = validated_data.pop('skills',[])
+            validated_data['user'] = self.context['request'].user
+            
+            match_filter = super().create(validated_data)
+            match_filter.skill_categories.set(skill_categories)
+            match_filter.skills.set(skills)
+            
+            return match_filter
+        
+        
+        
