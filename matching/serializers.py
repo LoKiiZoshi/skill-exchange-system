@@ -158,5 +158,19 @@ class MatchFilterSerializer(serializers.ModelSerializer):
             
             return match_filter
         
+class MatchAnalyticsSerializer(serializers.ModelSerializer):
+    """Serializer for match analytics"""
+    class Meta:
+        model = MatchAnalytics
+        fields = [
+            'id','skill_match','total_views','total_mesaage'
+            ,'exchange_request_sent','exchange_completed',
+            'user1_satisfaction','user2_satisfaction',
+            'successful_match','match_quality_score',
+            'created_at','updated_at'
+        ]
+        
+        read_only_fields = ['id','created_at', 'updated_at']
+        
         
         
