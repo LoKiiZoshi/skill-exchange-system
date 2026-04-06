@@ -173,4 +173,30 @@ class MatchAnalyticsSerializer(serializers.ModelSerializer):
         read_only_fields = ['id','created_at', 'updated_at']
         
         
+class MatchFeedbackSerializer(serializers.ModelSerializer):
+    """Serializer for match ffedback"""
+    user_name = serializers.CharField(source = 'user.get_full_name', read_only =True)
+    
+    class Meta:
+        model = MatchFeedback
+        fields = [
+            'id','user','user_name','skill_match','feedback_type',
+            'rating','comment','created_at']
+        
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+    
+    
+class MatchingAlgorithmInputSerializer(serializers.Serializer):
+    """Serializer for matching algorithm input"""
+    skill_id = serializers.IntegerField(required = True)
+    max_results = serializers.IntegerField(defult = 10, min_value =1, max_value =50)
+    include_one_way = serializers.BooleanField(default = True)
+    min_match_score = serializers.IntegerField(default =50,min_value = 0,max_value=100 )
+    
+    
+
+        
+        
         
