@@ -197,6 +197,15 @@ class MatchingAlgorithmInputSerializer(serializers.Serializer):
     
     
 
-        
+class BulkMatchGenerationSerializer(serializers.Serializer):
+    """Serializer for bulk match generation"""
+    user_id = serializers.IntegerField(required=False)
+    regenerate_existing = serializers.BooleanField(default=False)
+    min_score_threshold = serializers.IntegerField(default=60, min_value=0, max_value=100)
+    
+    
+    
+    
+    
         
         
