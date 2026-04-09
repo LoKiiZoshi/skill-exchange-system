@@ -79,3 +79,33 @@ class SkillMatchModelTest(TestCase):
             self.assertEqual(match.match_type,'mutual_exchange')
             self.assertTrue(match.is_active)
             
+            
+            
+            
+class matchPreferenceAPITest(APITestCase):
+    """Tests for MatchPreference API"""
+    
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='pass123'
+            )
+        
+    def test_create_preference(self):
+        """Test creating match preferences"""
+        url = '/api/matching/preferences/my_preferences/'
+        data = {
+            'max_distance': '25km',
+            'meeting_preference':'hybrid',
+            'min_rating':3.5,
+            'prefer_verified_users': True
+        }
+        
+        
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code,status_HTTp_200_ok)
+        self.assertTrue(response.data['max_distance'],'10km')
+        
+        
