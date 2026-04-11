@@ -65,3 +65,79 @@ class MatchPrePreferenceViewSet(viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception = True)
                 serializer.save()
                 return Response(serializer.data)
+            
+            
+            
+class SkillMatchViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for skill matches"""
+    serializer_class = SkillMatchSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['match_type','is_active']
+    ordering_fields = ['match_score','created_at']
+    ordering = ['-match_score']
+    
+    def get_queryset(self):
+        """Return matches for current user"""
+        user = self.request.user
+        return SkillMatch.objects.filter(
+            Q(user1 = user)| Q(user2 = user), is_active = True
+        )
+        
+        
+    @action(detail=False, methods=['get'])
+    def top_matches(self , request):
+        """Get top matches for current user"""
+        limit = int(request.query_params.get('limit',10))
+        matches = self.get_queryset().order_by('-match_score')[:limit]
+        serializer = self.get_serializer(matches, many = True)
+        return Response(serializer.data)
+    
+    
+    @action(detail=True, methods=['post'])
+    def mark_viewed(self, request,pk = None):
+        """Mark match as viewed"""
+        match = self.get_object()
+        User = request.user
+        
+        if match.user1 == user:
+            match.viewed_by_user1 = True
+        elif match.user2 == User:
+            match.viewed_by_user2 = True
+            
+        match.save()
+        serializer = self.get_serializer(match)
+        return Response(serializer.data)
+    
+    
+    
+    @action(detail=True,methods=['post'])
+    def mark_interest(self, request, pk = None):
+        """Mark interest in this match"""
+        match = self.get_object()
+        user = request.user
+        
+        if match.user1 == user:
+            match.user1_interested = True
+        elif match.user2 == user:
+            match.user2_interested = True
+        
+        match.save()
+        
+        # if both interested, create notification 
+        if match.user1_interested and match.user2_interested:
+            from skills.models import Notification
+            Notification.objects.create(
+                user = match.user1 if user == match.user2 else match.user2,
+                Notification_type = 'new_message',
+                title = 'Mutual Match Interest!',
+                message = f'{user.get_full_name()} is also interested in your match!'
+            )
+            
+            serializer = self.get_serializer(match)
+            return Response(serializer.data)
+        
+        
+        
+        
+            
