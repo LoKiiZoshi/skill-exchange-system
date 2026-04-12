@@ -139,5 +139,48 @@ class SkillMatchViewSet(viewsets.ReadOnlyModelViewSet):
         
         
         
-        
-            
+class MatchSuggestionViewSet(viewsets.ModelViewSet):
+    """ViewSet for match suggestions"""
+    serializer_class = MatchSuggestionSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['suggestion_score', 'created_at']
+    ordering = ['-suggestion_score','-created_at']
+    
+    def get_queryset(self):
+        """Return suggetions for current user"""
+        return MatchSuggestion.objects.filter(user = self.request.user,dismissed = False)
+    
+    @action(detail=False, methods=['get'])
+    def unviewed(self, request):
+        """Get unviewed suggestions"""
+        suggestions = self.get_queryset().filter(viewed = False)
+        serializer = self.get_serializer(suggestions, many = True)
+        return Response(serializer.data)
+    
+    @action(detail=True,methods=['post'])
+    def mark_viewed(self, request, pk = None):
+        """Mark suggestion as viewed"""
+        suggestion = self.get_object()
+        suggestion.mark_as_viewed()
+        serializer = self.get_serializer(suggestion)
+        return Response(serializer.data)
+    
+    
+    @action(detail=True, methods=['post'])
+    def dismiss(self, request, pk = None):
+        """Dismiss this suggestion"""
+        suggestion = self.get_object()
+        suggestion.dismiss()
+        serializer = self.get_serializer(suggestion)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods = ['post'])
+    def accept(self, request, pk = None):
+        """Accept this suggestion"""
+        suggestion = self.get_object()
+        suggestion.accept()
+        serializer = self.get_serializer(suggestion)
+        return Response(serializer.data)
+    
+    
