@@ -182,5 +182,74 @@ class MatchSuggestionViewSet(viewsets.ModelViewSet):
         suggestion.accept()
         serializer = self.get_serializer(suggestion)
         return Response(serializer.data)
+
+
+class SavedMatchViewSet(viewsets.ModelViewSet):
+    """ViewSet for saved matches"""
+    serializer_class = SavedMatchSerializer
+    permission_classes = [IsAuthenticated]
+    ordering = ['-created_at']
+    
+    def get_queryset(self):
+        return SavedMatch.objects.filter(User = self.request.user)
     
     
+class MatchFilterViewSet(viewsets.ModelViewSet):
+    """ViewSet for match filters"""
+    serializer_class = MatchFilterSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.OrderingFilter]
+    ordering = ['-created_at']
+    
+    
+    def get_queryset(self):
+        return MatchFilter.objects.filter(User = self.request.user)
+    
+    @action(detail=False,methods=['get'])
+    def active(self, request):
+        """Get active filters"""
+        filters = self.get_queryset().filter(is_active = True)
+        serializer = self.get_serializer(filters, many = True)
+        return Response(serializer.data)
+    
+    @action(detail=True,methods = ['post'])
+    def apply(self, request, pk = None):
+        """Apply this filter and get matches"""
+        match_filter = self.get_object()
+        
+        
+        # Get users based on filter criteria
+        users = users.objects.exclude(id = request.user.id)
+        
+        # Filter by skills
+        if match_filter.skills.exists():
+            users = users.filter(
+                user_skills___skill_in = match_filter.skills.all(),
+                user_skills__can_teach = True
+            ).distinct()
+            
+            
+        # Filter by skill categories
+        if match_filter.skill_categories.exists():
+            users = users.filter(
+                user_skills___skill_category__in = match_filter.skill_categories.all(),
+                user_skillls___can_teach = True
+            ).distinct()
+            
+            #Filter by rating
+            if match_filter.min_rating:
+                users = users.annotate(
+                    avg_rating = Avg('ratings_received__rating')
+                )
+                
+                # Filter by location
+                if match_filter.location:
+                    users = users.filter(location___icontains = match_filter.location)
+                    
+                    from accounts.serializers import UserProfileSerializer
+                    serilaizer = UserProfileSerializer(users,many = True)
+                    return Response(serilaizer.data)
+                
+                
+                
+                
