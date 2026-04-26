@@ -35,3 +35,42 @@ class UserProfileSerializer(serializers.ModelSerializer):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
  
+ 
+ 
+
+
+class EducationSerializer(serializers.ModelSerializer):
+    """Serializer for education"""
+    duration = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Education
+        fields = [
+            'id','user','institution','degree','fields_of_study',
+            'start_date','end_date','is_current','grade','description',
+            'duration','created_at','updated_at'
+        ]
+        
+        read_only_fields = ['id','user','created_at','updated_at']
+        
+        
+        def get_duration(self,obj):
+            """Calculate duration of education"""
+            start = obj.start_date
+            end = obj.end_date if obj.end_date else timezone.now().date()
+            years = (end - start).days / 365.25
+            return f"{years:.1f} years"
+        
+        
+        def create(self, validated_data):
+            validated_data['user'] = self.context['request'].user
+            return  super().create(validated_data)
+        
+        def validate(self,attrs):
+         """Validate dates"""
+         if attrs.get('end_date') and attrs.get('start_date'):
+             if attrs['end_date'] < attrs['start_date']:
+                 raise serializers.ValidationError("End date must be after start date")
+             return attrs
+         
+         
