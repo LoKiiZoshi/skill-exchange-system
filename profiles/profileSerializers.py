@@ -103,3 +103,50 @@ class ExperienceSerializer(serializers.ModelSerializer):
                 if attrs['end_date']< attrs['start_date']:
                     raise serializers.ValidationError("End date must be after start date")
                 return attrs
+            
+class CertificationSerializer(serializers.ModelSerializer):
+    """Serializer for certifications"""
+    is_expired = serializers.BooleanField(read_only = True)
+    status = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Certification
+        fields = [
+            'id', 'user','name','issuing_organization','credential_id',
+            'credential_url','issue_date','expiration_date','does_not_expire',
+            'description','is_expired','status','created_at','updated_at'
+        ]
+        
+        read_only_fields = ['id','user','created_at','updated_at']
+        
+        def get_status(self,obj):
+            """Get certification status"""
+            if obj.is_expired = serializers.BooleanField(read_only = True)
+            status = serializers.SerializerMethodField()
+            
+            class Meta:
+                model = Certification
+                fields = [
+                    'id','user','name','issuing_organization','credential_id'
+                    ,'credential_url','issue_date','expiration_date','does_not_expire',
+                    'description','is_expired','status','created_at','updated_at'
+                ]
+                
+                read_only_fields =['id','user','created_at','updated_at']
+                
+                def get_status(self , obj):
+                    """Get certification status"""
+            if obj.is_expired:
+                    return 'expired'
+            elif obj.does_not_expire:
+                return 'valid'
+            elif obj.expiration_date:
+                day_until_expiry = (obj.expiration_date - timezone.now().date()).days
+                if days_until_expiry <= 30:
+                    return 'expiring_soon'
+                return 'valid'
+            return 'valid'
+        
+        def create(self, validated_data):
+            validated_data['user'] = self.context['request'].user
+            return super().create(validated_data)
