@@ -150,3 +150,33 @@ class CertificationSerializer(serializers.ModelSerializer):
         def create(self, validated_data):
             validated_data['user'] = self.context['request'].user
             return super().create(validated_data)
+        
+
+class ProjectSerilaizer(serializers.ModelSerializer):
+    """Serializer for peojects"""
+    technologies_details = serializers.SerializerMethodField()
+    user_name = serializers.CharField(source = 'user.get_full_name',read_only = True)
+    
+    class Meta:
+        model = Project
+        fields = [
+            'id','user','user_name','title','description','project_url',
+            'repository_url','start_date','end_date','status',
+            'technologies','technologies_details','thumbnail','views',
+            'likes','is_featured','created_at','updated_at'
+        ]
+        
+        read_only_fields = ['id','user','views','likes','created_at','updated_at']
+        
+        def get_technologies_details(self, obj):
+            from accounts.serializer import SkillSerializer
+            return SkillSerializer(obj.technologies.all(), many = True).data
+        
+        def create(self, validated_date):
+            technologies = validated_data.pop('technologies',[])
+            validated_date['user'] = self.context['request'].user
+            Project = super().create(validated_date)
+            Project.technologies.set(technologies)
+            return Project
+        
+        
