@@ -178,5 +178,30 @@ class ProjectSerilaizer(serializers.ModelSerializer):
             Project = super().create(validated_date)
             Project.technologies.set(technologies)
             return Project
+
+class AchievementSerializer(serializers.ModelSerializer):
+    """Serializer for achievements"""
+    user_name = serializers.CharField(source = 'user.get_full_name',read_only = True)
+    progress_percentage = serializers.Serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Achievement
+        fields = [
+            'id','user','user_name','achievement_type','title',
+            'description','icon','badge_image','target_value'
+            ,'current_value','progress_percentage','is_unlocked'
+            'unlocked_at','created_at'
+        ]
+        read_only_fields = ['id','user','is_unlocked','unlocked_at','created_at']
+        
+        
+        def get_progress_percentage(self, obj):
+            """Calculate progress percentage"""
+            if obj.target_value == 0:
+                return 0
+            percentage = (obj.current_value / obj.target_value)* 100
+            return min(percentage, 100)
+        
+        
         
         
