@@ -202,6 +202,23 @@ class AchievementSerializer(serializers.ModelSerializer):
             percentage = (obj.current_value / obj.target_value)* 100
             return min(percentage, 100)
         
-        
-        
-        
+    
+class ProfileViewSerializer(serializers.ModelSerializer):
+    """Serializer for profile views"""
+    profile_email = serializers.CharField(source = 'profile.email', read_only =True)
+    profile_name = serializers.CharField(source = 'profile.get_full_name', read_only =True)
+    viewer_email = serializers.CharField(source = 'viewer.email', read_only = True)
+    viewer_name = serializers.CharField(source = 'viewer.get_full_name', read_only = True)
+    
+    class Meta:
+        model = ProfileView
+        fields = [
+            'id','profile','profile_email','profile_name'
+            'viewer','viewer_email','viewer_name',
+            'id_address','user_agent','viewed_at'
+        ]     
+
+    read_only_fields = ['id','viewed_at']
+    
+    
+    
