@@ -222,3 +222,35 @@ class ProfileViewSerializer(serializers.ModelSerializer):
     
     
     
+
+class FollowSerializer(serializers.ModelSerializer):
+    """Serializer for follows"""
+    followe_name = serializers.CharField(source = 'follower.get_full_name', ewad_only = True)
+    follower_email = serializers.CharField(source = 'follower.email', read_only =True)
+    following_name = serializers.CharField(source = 'following.get_full_name', read_only = True)
+    following_email = serializers.CharField(source = 'following.email', read_only = True)
+    
+    class Meta:
+        model = Follow
+        fields = [
+            'id','follower','follower_name','follower_email','following','following_name','following_email','created_at'
+        ]
+        read_only_fields = ['id','follower','created_at']
+        
+        
+        def create(self,validated_date):
+            validated_data['follower'] = self.context['request'].user
+            return super().create(validated_data):
+        
+        
+        def validate(self,attrs):
+            """Validate follow"""
+            request = self.context['request']
+            if attrs.get('following') == request.user:
+                raise serializers.ValidationError("You cannot follow yourself")
+            return attrs
+        
+        
+        
+        
+        
