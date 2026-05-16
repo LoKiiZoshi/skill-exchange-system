@@ -102,4 +102,39 @@ class Education(models.Model):
     
     
     
+    
+# Experience 
+
+class Experience(models.Model):
+    EMPLOYMENT_TYPE_CHOICES = [
+        ('full_time', 'Full TIme'),
+        ('part_time','Part Time'),
+        ('contract', 'Contract'),
+        ('internship','Internship'),
+        ('freelance', 'Freelance'),
+        ('self_employed','self Employed'),
+        ('volunter', 'Volunteer'),
+    ]
         
+        
+user = models.ForeignKey(User, on_delete = models.CASCADE, related_name='experiences')
+title = models.CharField(max_length=255)
+company = models.CharField(max_length=255)
+employment_type = models.CharField(max_length=20,choices=EMPLOYMENT_TYPE_CHOICES,blank=True)
+location = models.CharField(max_length=255,blank=True)
+start_date = models.DateField()
+end_date = models.DateField(null=True,blank=True)
+is_current = models.BooleanField(default=True)
+description = models.TextField(balnk = True)
+
+create_at = models.DateTimeField(auto_now_add=True)
+updated_at = models.DateTimeField(auto_now=True)
+
+class Meta:
+    ordering = ['-start_date']
+    
+def __str__(self):
+    return f"{self.title}at {self.company}"
+
+
+
