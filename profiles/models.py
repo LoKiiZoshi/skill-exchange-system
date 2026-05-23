@@ -138,3 +138,37 @@ def __str__(self):
 
 
 
+# Certification
+
+class Certification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cerfications')
+    name = models.CharField(max_length=255)
+    issuing_organization = models.CharField(max_length=255)
+    credential_id = models.CharField(max_length=255, blank=True)
+    credential_url = models.URLField(blank=True)
+    issue_date = models.DateField()
+    expiration_date = models.DateField(null= True, blank=True)
+    does_not_expire = models.BooleanField(default=False)
+    description = models.TextField(blank=True)
+    
+    
+    create_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    
+    class Meta:
+        ordering = [' -issue_date']
+
+    @property
+    def is_expired(self):
+        if self.does_not_expire or not self.expiration_date:
+            return False
+        
+        return self.expiration_date < timezone.now().date()
+    
+    def __str__(self):
+        return f"{self.name} - {self.issuing_organization}"
+    
+    
+    
+        
