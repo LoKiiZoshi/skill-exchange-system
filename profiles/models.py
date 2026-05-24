@@ -171,4 +171,34 @@ class Certification(models.Model):
     
     
     
-        
+class Project(models.Model):
+    STATUS_CHOICES = [
+        ('in_progress', 'In Progress'),
+        ('completed',   'Completed'),
+        ('on_hold',     'On Hold'),
+        ('abandoned',   'Abandoned'),
+    ]
+ 
+    user             = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects')
+    title            = models.CharField(max_length=255)
+    description      = models.TextField(blank=True)
+    project_url      = models.URLField(blank=True)
+    repository_url   = models.URLField(blank=True)
+    start_date       = models.DateField(null=True, blank=True)
+    end_date         = models.DateField(null=True, blank=True)
+    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
+    # Technologies is a ManyToMany to a Skill model (from accounts app)
+    technologies     = models.ManyToManyField('accounts.Skill', blank=True, related_name='projects')
+    thumbnail        = models.ImageField(upload_to='project_thumbnails/', null=True, blank=True)
+    views            = models.PositiveIntegerField(default=0)
+    likes            = models.PositiveIntegerField(default=0)
+    is_featured      = models.BooleanField(default=False)
+ 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+ 
+    class Meta:
+        ordering = ['-created_at']
+ 
+    def __str__(self):
+        return self.title
