@@ -202,3 +202,46 @@ class Project(models.Model):
  
     def __str__(self):
         return self.title
+    
+    
+    
+    
+# ──────────────────────────────────────────────
+# Achievement
+# ──────────────────────────────────────────────
+class Achievement(models.Model):
+    ACHIEVEMENT_TYPE_CHOICES = [
+        ('skill',       'Skill'),
+        ('session',     'Session'),
+        ('connection',  'Connection'),
+        ('project',     'Project'),
+        ('streak',      'Streak'),
+        ('other',       'Other'),
+    ]
+ 
+    user             = models.ForeignKey(User, on_delete=models.CASCADE, related_name='achievements')
+    achievement_type = models.CharField(max_length=20, choices=ACHIEVEMENT_TYPE_CHOICES)
+    title            = models.CharField(max_length=255)
+    description      = models.TextField(blank=True)
+    icon             = models.CharField(max_length=100, blank=True)
+    badge_image      = models.ImageField(upload_to='badges/', null=True, blank=True)
+    target_value     = models.PositiveIntegerField(default=1)
+    current_value    = models.PositiveIntegerField(default=0)
+    is_unlocked      = models.BooleanField(default=False)
+    unlocked_at      = models.DateTimeField(null=True, blank=True)
+ 
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    class Meta:
+        ordering = ['-created_at']
+ 
+    def __str__(self):
+        return f"{self.title} ({self.user.email})"
+ 
+    def save(self, *args, **kwargs):
+        if self.current_value >= self.target_value and not self.is_unlocked:
+            self.is_unlocked = True
+            self.unlocked_at = timezone.now()
+        super().save(*args, **kwargs)
+ 
+ 
