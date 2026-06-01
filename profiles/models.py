@@ -244,4 +244,17 @@ class Achievement(models.Model):
             self.unlocked_at = timezone.now()
         super().save(*args, **kwargs)
  
+  
+
+class ProfileView(models.Model):
+    profile    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_views')
+    viewer     = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_views', null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    viewed_at  = models.DateTimeField(auto_now_add=True)
  
+    class Meta:
+        ordering = ['-viewed_at']
+ 
+    def __str__(self):
+        return f"{self.viewer} viewed {self.profile} at {self.viewed_at}"
