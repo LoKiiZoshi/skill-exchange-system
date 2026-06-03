@@ -258,3 +258,20 @@ class ProfileView(models.Model):
  
     def __str__(self):
         return f"{self.viewer} viewed {self.profile} at {self.viewed_at}"
+    
+    
+    
+    
+    
+    
+class Follow(models.Model):
+    follower   = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following_set')
+    following  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='follower_set')
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    class Meta:
+        unique_together = ('follower', 'following')
+        ordering = ['-created_at']
+ 
+    def __str__(self):
+        return f"{self.follower} follows {self.following}"
