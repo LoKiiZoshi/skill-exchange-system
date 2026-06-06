@@ -275,3 +275,17 @@ class Follow(models.Model):
  
     def __str__(self):
         return f"{self.follower} follows {self.following}"
+    
+    
+class Block(models.Model):
+    blocker    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocking')
+    blocked    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_by')
+    reason     = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    class Meta:
+        unique_together = ('blocker', 'blocked')
+        ordering = ['-created_at']
+ 
+    def __str__(self):
+        return f"{self.blocker} blocked {self.blocked}"
