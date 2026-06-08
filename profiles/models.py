@@ -289,3 +289,42 @@ class Block(models.Model):
  
     def __str__(self):
         return f"{self.blocker} blocked {self.blocked}"
+    
+    
+    
+class ProfileReport(models.Model):
+    REASON_CHOICES = [
+        ('spam', 'Spam'),
+        ('harassment','Harassment'),
+        ('fake', 'Fake Profile'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('other', 'Other'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'pending'),
+        ('reviewed','Reviewed'),
+        ('resolved','Resolved'),
+        ('dismissed','Dismissed'),
+    ]
+    
+reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
+reported = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_received') 
+reason = models.CharField(max_length=20,choices=REASON_CHOICES) 
+description = models.TextField(blank=True)
+status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+created_at = models.DateTimeField(auto_now_add=True)
+updated_at = models.DateTimeField(auto_now_add=True)
+
+
+class Meta:
+    ordering = ['-created_at']
+    
+def __str__(self):
+    return f"Report by {self.reporter} on {self.reported}"
+
+
+
+
+    
+    
+    
