@@ -323,8 +323,38 @@ def __str__(self):
     return f"Report by {self.reporter} on {self.reported}"
 
 
+class SocialLink(models.Model):
+    PLATFORM_CHOICES = [
+        ('github','GitHub'),
+        ('linkedin','LinkedIn'),
+        ('twitter','Twitter'),
+        ('facebook','Facebook'),
+        ('instagram','Instagram'),
+        ('Youtube','YouTube'),
+        ('website', 'website'),
+        ('other', 'Other'),
+        
+        
+    ]
 
 
-    
+user = models.ForeignKey(User, on_delete= models.CASCADE, related_name = 'social_links')
+platform = models.CharField(max_length=20, choices = PLATFORM_CHOICES)
+url = models.URLField()
+label = models.CharField(max_length=100,blank=True)
+created_at = models.DateTimeField(auto_now_add=True)
+updated_at = models.DateTimeField(auto_now_add=True)
+
+
+class Meta:
+    unique_together = ('user','platform') 
+    ordering = ['platform']
+
+
+def __str__(self):
+    return f"{self.user.email} - {self.platform}"
+
+
+   
     
     
