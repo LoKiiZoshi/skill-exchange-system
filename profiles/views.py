@@ -78,3 +78,14 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         profile.save(update_fields=['is_verified', 'verified_at'])
         return Response({'status': 'Profile verified.'})
  
+ 
+ 
+class EducationViewSet(viewsets.ModelViewSet):
+    
+    serializer_class = EducationSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    
+    def get_queryset(self):
+        return Education.objects.filter(User =self.request).order_by('-start_date')
+    def perform_create(self, serializer):
+        serializer.save(user = self.request.user)
