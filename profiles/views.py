@@ -89,3 +89,19 @@ class EducationViewSet(viewsets.ModelViewSet):
         return Education.objects.filter(User =self.request).order_by('-start_date')
     def perform_create(self, serializer):
         serializer.save(user = self.request.user)
+        
+        
+        
+# Experience Viewset
+
+class ExperienceViewSet(viewsets.ModelViewSet):
+    
+    
+    serializer_class = ExperienceSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    
+    def get_queryset(self):
+        return Experience.objects.filter(user = self.request.user).order_by('-start_date')
+    
+    def perform_create(self, serializer):
+        serializer.save(user = self.request.user)
