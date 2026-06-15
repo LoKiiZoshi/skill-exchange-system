@@ -105,3 +105,15 @@ class ExperienceViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(user = self.request.user)
+        
+        
+class CertificationViewSet(viewsets.ModelViewSet):
+  
+    serializer_class   = CertificationSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+ 
+    def get_queryset(self):
+        return Certification.objects.filter(user=self.request.user).order_by('-issue_date')
+ 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
