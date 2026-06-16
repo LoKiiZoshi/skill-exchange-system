@@ -117,3 +117,46 @@ class CertificationViewSet(viewsets.ModelViewSet):
  
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+
+
+
+ 
+# ──────────────────────────────────────────────────────────────
+# Project ViewSet
+# ──────────────────────────────────────────────────────────────
+class ProjectViewSet(viewsets.ModelViewSet):
+  
+
+    serializer_class   = ProjectSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+ 
+    def get_queryset(self):
+        return Project.objects.select_related('user').prefetch_related('technologies').all()
+ 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.views += 1
+        instance.save(update_fields=['views'])
+        return Response(self.get_serializer(instance).data)
+ 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+ 
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def like(self, request, pk=None):
+        project = self.get_object()
+        project.likes += 1
+        project.save(update_fields=['likes'])
+        return Response({'likes': project.likes})
+ 
+    @action(detail=False, methods=['get'])
+    def featured(self, request):
+        qs = self.get_queryset().filter(is_featured=True)
+        return Response(self.get_serializer(qs, many=True).data)
+ 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def mine(self, request):
+        qs = self.get_queryset().filter(user=request.user)
+        return Response(self.get_serializer(qs, many=True).data)
