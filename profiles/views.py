@@ -160,3 +160,23 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def mine(self, request):
         qs = self.get_queryset().filter(user=request.user)
         return Response(self.get_serializer(qs, many=True).data)
+    
+    
+class AchievementViewSet(viewsets.ModelViewSet):
+    serializer_class = AchievementSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    
+    def get_queryset(self):
+        return Achievement.objects.filter(user = self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user = self.request.user)
+    
+    
+    @action(detail=False, methods=['get'])
+    def unlocked(self, request):
+        qs = self.get_queryset().filter(is_unlocked = True)
+        return Response(self.get_serializer(qs, many = True).data)
+    
+    
+    
