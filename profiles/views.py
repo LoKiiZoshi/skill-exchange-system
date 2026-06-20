@@ -180,3 +180,11 @@ class AchievementViewSet(viewsets.ModelViewSet):
     
     
     
+    
+class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
+    
+    serializer_class = ProfileViewSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return ProfileView.objects.filter(profile = self.request.user) .order_by('-viewed_at')
