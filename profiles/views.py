@@ -188,3 +188,30 @@ class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         return ProfileView.objects.filter(profile = self.request.user) .order_by('-viewed_at')
+    
+    
+    
+class FollowViewSet(viewsets.ModelViewSet):
+    
+    serializer_class = FollowSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get','post','delete','head','option']
+    
+    def get_queryset(self):
+        return Follow.objects.filter(follower = self.request.user).select_related('follower','following')
+    
+    def perform_create(self, serializer):
+        serializer.save(follower = self.request.user)
+        
+    @action(detail=False, methods = ['get'])
+    def follwers(self, request):
+        """List everyone who follows the current usere."""
+        qs = Follow.objects.filter(following = request.user).select_related('follower','following')
+        return Response(self.get_serializer(qs, many = True).data)
+
+
+        @action(detail=False, methods=['get'])
+        def following(self, request):
+            """List everyone the current user follows."""
+            qs = self.get_queryset()
+            return Response(self.get_serializer(qs,many = True).data)        
