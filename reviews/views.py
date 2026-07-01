@@ -19,5 +19,22 @@ class IsReviewerOrReadOnly(permissions.BasePermission):
         return obj.reviewer == request.User
     
     
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.select_related('reviewer','reviewed_user').all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated, IsReviewerOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter,filters.SearchFilter]
+    filterset_fields = ['rating','listing_id','reviewed_user']
+    ordering_fields = ['created_at','rating']
+    ordering = ['-created_at']
+    search_fields = ['tittle', ' body','listing_title']
     
-
+@action(detail=False, methods=['get'], url_path='my_reviews')
+def my_reviews(self, request):
+        """All reviews written by the authenticated user."""
+        qs = self.get_queryset().filter(reviewer=request.user)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+    
+    
+    
