@@ -36,5 +36,32 @@ def my_reviews(self, request):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
     
+@action(detail=False, methods=['get'], url_path='for_listing')
+def for_listing(self, request):
+        """Reviews for a specific ski gear listing. ?listing_id=X required."""
+        listing_id = request.query_params.get('listing_id')
+        if not listing_id:
+            return Response({'detail': 'listing_id query param is required.'}, status=400)
+        qs = self.get_queryset().filter(listing_id=listing_id)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
     
     
+@action(detail=False, methods=['get'], url_path='for_user')
+def for_user(self, request):
+    """Reviews received by a seller/user. ? user_id=X required."""
+    user_id = request.query_params.get('user_id')
+    if not user_id:
+        return Response({'detail':'user_id query param is required.'}, status=400)
+    qs = self.get_queryset().filter(reviewed_user_id = user_id)
+    serializer = self.get_serializer(qs,many = True)
+    return Response(serializer.data)
+
+@action(detail=False, methods=['get'], url_path='summary')
+def summary(self, request):
+        """Overall average rating and total review count."""
+        stats = self.get_queryset().aggregate(
+            average_rating=Avg('rating'),
+            total_reviews=Count('id'),
+        )
+        return Response(stats)
