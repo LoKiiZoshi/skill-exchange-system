@@ -28,5 +28,20 @@ class ReviewSerializer(serializers.ModelSerializer):
         
         read_only_fields = ['id','reviewer','created_at','updated_at']
         
+    def validate(self, attrs):
+        # At least one of listing_id or reviewed_user must be set
+        if not attrs.get('listing_id') and not attrs.get('reviewed_user'):
+            raise serializers.ValidationError(
+                "A review must target either a listing(listing_id) or a user(reviewed_user_id)."
+            )
+            return attrs
+        
+    def create(self, validated_data):
+        validated_data['reviewer'] = self.context['request'].user
+        return super().create(validated_data)
+        
+        
+        
+
         
         
