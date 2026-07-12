@@ -101,3 +101,23 @@ class SkiSession(models.Model):
         if self.price_per_hour and self.duration_hours:
             self.total_price = round(float(self.price_per_hour) * float(self.duration_hours), 2)
         super().save(*args, **kwargs)
+        
+
+
+class SessionMessage(models.Model):
+  """Simple messagin thread attached to a skiSession so host and participant can communicate."""
+  
+  session = models.ForeignKey(SkiSession, on_delete=models.CASCADE, related_name='messages')
+  sender = models.ForeignKey(User, on_delete= models.CASCADE,related_name='session_messages')
+  body = models.TextField()
+  is_read = models.BooleanField(default=False)
+  created_at = models.DateTimeField(auto_now_add=True)
+  
+  class Meta:
+      ordering = ['created_at']
+      verbose_name = 'Session Message'
+      verbose_name_plural = 'Session Messages'
+      
+      def __str__(self):
+         return f"[{self.session.title}] {self.sender.username}: {self.body[:50]}"
+     
