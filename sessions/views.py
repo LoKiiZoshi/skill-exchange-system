@@ -30,4 +30,38 @@ class IsMessageSender(permissions.BasePermission):
             return True
         return obj.sender == request.user
     
+
+# SkiSession ViewSet ----
+class SkiSessionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated, IsHostOrParticipantOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter,filters.SearchFilter]
+    filterset_fields = ['status','session_type','skill_level','host','participant']
+    ordering_fields = ['start_time','created_at','total_price']
+    ordering_fields = ['title','description','location','listing_title']
     
+    def get_queryset(self):
+        return SkiSession.objects.select_related('host','participant').prefetch_related('messages')
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SkiSessionListSerializer
+        return SkiSessionListSerializer
+        return SkiSessionSerializer
+    
+    # ----- Custom actions --------------------
+    
+    @action(detail=False,methods=['get'],url_path = 'my_sessions')
+    def my_sessions(self,request):
+      """"All sessions where the current user is host Or Participant"""
+      qs = self.get_queryset().filter(
+          Q(host=request.user)|Q(participant = request.user)
+          
+      )
+      
+      serializer = SkiSessionListSerializer(qs,many =True,context = {'request':request})
+      return Response(serializer.data)
+  
+  
+  
+    
+     
