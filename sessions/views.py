@@ -62,6 +62,30 @@ class SkiSessionViewSet(viewsets.ModelViewSet):
       return Response(serializer.data)
   
   
-  
+    @action(detail = False,methods =['get'], url_path = 'upcoming')
+    def upcoming(self, request):
+        """Confirmed future session for the current user."""
+        qs = self.get_queryset().filter(
+            Q(host = request.user)|Q(participant = request.user),
+            status = 'confirmed',
+            start_time__gt = timezone.now(),
+            
+        )
+        serializer = SkiSessionListSerializer(qs, many=True,context = {'request':request})
+        return Response(serializer.data)
     
-     
+    
+    @action(detail=False,methods=['get'],url_path='past')
+    def past(self,request):
+        """Completed Sessions for the current user."""
+        qs = self.get_queryset().filter(
+            Q(host = request.user)|Q(participant = request.user),
+            status = 'completed',
+        )
+        
+        serializer = SkiSessionListSerializer(qs,many = True,context = {'request':request})
+        return Response(serializer.data)
+    
+    
+    
+    
