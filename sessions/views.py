@@ -88,4 +88,14 @@ class SkiSessionViewSet(viewsets.ModelViewSet):
     
     
     
-    
+    @action(detail=True, methods=['post'], url_path='confirm')
+    def confirm(self, request, pk=None):
+        """Host confirms a pending session."""
+        session = self.get_object()
+        if session.host != request.user:
+            return Response({'detail': 'Only the host can confirm a session.'}, status=403)
+        if session.status != 'pending':
+            return Response({'detail': f'Cannot confirm a session with status "{session.status}".'}, status=400)
+        session.status = 'confirmed'
+        session.save(update_fields=['status', 'updated_at'])
+        return Response({'detail': 'Session confirmed.', 'status': session.status})
