@@ -99,3 +99,29 @@ class SkiSessionViewSet(viewsets.ModelViewSet):
         session.status = 'confirmed'
         session.save(update_fields=['status', 'updated_at'])
         return Response({'detail': 'Session confirmed.', 'status': session.status})
+    
+@action(detail=True,methods = ['post'], url_path = 'cancle')
+def cancel(self, request, pk = None):
+    """Host or participant cancels a session."""
+    session = self.get_object()
+    if session.status in ('completed','cancelled'):
+        return Response({'detail':f'Cannot cancel a session with status "{session.status}".'},status=400)
+    reason = request.data.get('reason','')
+    session.status = 'cancelled'
+    session.cancellation_reason = reason
+    session.save(update_fields =['status','cancellation_reason','updated_at'])
+    return Response({'detail':'Session cancelled.','status':session.status})
+
+@action(detail=True,methods=['post'], url_path ='complete')
+def complete(self,request,pk = None):
+    """"Host marks a session as completed"""
+    session = self.get_object()
+    if session.host != request.user:
+        return Response({'detail':'Only the host can mark a session as completed.'},status=400)
+    if session.status not in ('confirmed','ongoing'):
+            return Response({'detail': f'Cannot complete a session with status "{session.status}".'}, status=400)
+    session.status = 'completed'
+    session.save(update_fields = ['status','updated_at'])
+    return Response({'detail':'Session marked as completed.','status':session.status}) 
+   
+
