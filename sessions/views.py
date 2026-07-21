@@ -122,6 +122,21 @@ def complete(self,request,pk = None):
             return Response({'detail': f'Cannot complete a session with status "{session.status}".'}, status=400)
     session.status = 'completed'
     session.save(update_fields = ['status','updated_at'])
-    return Response({'detail':'Session marked as completed.','status':session.status}) 
-   
+    return Response({'detail':'Session marked as completed.','status':session.status})              
+
+@action(detail=False,methods=['get'], url_path='stats')
+def stats(self, request):
+    """Aggregate stats for the crrent user's sessions."""
+    qs = self.get_queryset().filter(
+        Q(host = request.user)|Q(participant = request.user)
+        data = qs.aggregate(
+            total = Count('id'),
+            completed = Count('id', filter = Q(status='completed')),
+            pending = Count('id',filter=Q(status='pending')),
+            cancelled = Count('id', filter = Q(status = 'cancelled')),
+            avg_price = Avg('total_price'),
+            
+        )
+        return Response(data)
+        )   
 
