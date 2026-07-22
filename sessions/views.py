@@ -133,10 +133,32 @@ def stats(self, request):
             total = Count('id'),
             completed = Count('id', filter = Q(status='completed')),
             pending = Count('id',filter=Q(status='pending')),
-            cancelled = Count('id', filter = Q(status = 'cancelled')),
+            cancelled = Count('id', filter = Q(status = 'cancelled')), 
             avg_price = Avg('total_price'),
             
         )
         return Response(data)
         )   
 
+class SessionMessageViewet(viewsets.ModelViewSet):
+    """ Message within a session"""
+    serializer_class = SessionMessageSeriaizer
+    permission_classes= [permissions.IsAuthenticated,IsMessageSender]
+    filter_backends = [DjangoFilterBackend,filters.OrderingFilter]
+    filterset_fields = ['session','sender','is_read']
+    ordering = ['created_at']
+    
+    def get_queryset(self):
+        user = self.request.user
+        # Only show message in sesssions where the user is host or participant
+        return SessionMessage.objects.select_related('sender','session').filter(
+            Q(session__host = user) | Q(session__participant = user)
+        )
+        
+    @action(detail=True, methods=['post'],url_path='mark_read')
+    def mark_read(self, request, pk = None):
+        """Mark a message as read."""
+        message = self.get_object()
+        message.is_read = True
+        message.save(update_fields = ['is_read'])  
+        return Response({'detail':'Message marked as read.'})
