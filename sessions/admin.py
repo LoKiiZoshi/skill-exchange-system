@@ -56,3 +56,17 @@ class SkiSessionAdmin(admin.ModelAdmin):
         }),
     )
  
+ 
+
+ 
+@admin.register(SessionMessage)
+class SessionMessageAdmin(admin.ModelAdmin):
+    list_display  = ['id', 'session', 'sender', 'is_read', 'created_at', 'short_body']
+    list_filter   = ['is_read', 'created_at']
+    search_fields = ['sender__username', 'body', 'session__title']
+    ordering      = ['-created_at']
+    readonly_fields = ['created_at']
+ 
+    def short_body(self, obj):
+        return obj.body[:60] + ('…' if len(obj.body) > 60 else '')
+    short_body.short_description = 'Message Preview'
