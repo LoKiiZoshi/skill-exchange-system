@@ -2,4 +2,6 @@ from django.apps import AppConfig
 
 
 class SessionsConfig(AppConfig):
-    name = 'sessions'
+    default_auto_field = 'django.db.models.BigAutoField'
+    name  = 'sessions'
+    label = 'sessions'
